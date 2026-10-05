@@ -25,7 +25,7 @@ runs:
     - name: Load .envrc
       shell: bash
       run: | # zizmor: ignore[github-env]
-        nix profile install --inputs-from . nixpkgs#direnv
+        nix profile add --inputs-from . nixpkgs#direnv
         direnv allow
         direnv export gha >>"${GITHUB_ENV}"
 
