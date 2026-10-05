@@ -2,8 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn-svelte/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/jetbrains-mono";
 
 @custom-variant dark (&:is(.dark *));
+/* set by select() in mode-toggle.svelte */
+@custom-variant system (&:is([data-theme="system"] *));
+@custom-variant os-dark (@media (prefers-color-scheme: dark));
 
 :root {
   --background: oklch(1 0 0);
@@ -76,6 +80,7 @@
 
 @theme inline {
   --font-sans: "Geist Variable", sans-serif;
+  --font-mono: "JetBrains Mono Variable", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -126,4 +131,12 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Tailwind v4 removed the pointer cursor from buttons, and shadcn menu items use cursor-default.
+   Unlayered so it wins over that class. */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+[role^="menuitem"] {
+  cursor: pointer;
 }

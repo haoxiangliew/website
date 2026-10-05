@@ -202,6 +202,8 @@
               # scripts
               fd
               git
+              imagemagick
+              resvg
               ripgrep
             ];
 
