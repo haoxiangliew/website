@@ -1,3 +1,4 @@
+import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
 import rsvelteRecommended from "@rsvelte/oxlint-plugin/recommended.json" with { type: "json" };
 import { defineConfig } from "oxlint";
 import tailwindcss from "oxlint-tailwindcss";
@@ -29,6 +30,7 @@ export default defineConfig({
   categories: {
     correctness: "error",
   },
+  extends: [effectRecommended],
   rules: {
     ...svelteRules,
     ...tailwindRules,

@@ -1,0 +1,97 @@
+name: Pull request
+
+on:
+  pull_request:
+    branches:
+      - staging
+    types: [opened, synchronize, reopened, closed]
+
+permissions: {}
+
+concurrency:
+  group: pr-${{ github.event.number }}
+  cancel-in-progress: false
+
+env:
+  STAGE: pr-${{ github.event.number }}
+
+jobs:
+  check:
+    name: Check
+    if: github.event.action != 'closed'
+    runs-on: namespace-profile-website
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up
+        uses: ./.github/actions/setup
+
+      - name: Format, lint and type check
+        run: nix fmt -- --ci
+
+  preview:
+    name: Preview
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: namespace-profile-website
+    permissions:
+      contents: read
+      pull-requests: write
+    environment:
+      name: preview
+      url: https://pr-${{ github.event.number }}.haoxiangliew.dev
+    env:
+      ACCESS_EMAILS: ${{ secrets.ACCESS_EMAILS }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up
+        uses: ./.github/actions/setup
+
+      - name: Plan staging and prod, deploy preview
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.number }}
+        run: |
+          failed=0
+          plan() { bun run alchemy:plan "$1" --no-input 2>&1; }
+          PLAN_STAGING="$(plan staging)" || failed=1
+          PLAN_PROD="$(plan prod)" || failed=1
+          export PLAN_STAGING PLAN_PROD
+          PULL_REQUEST="${PR}" bun run alchemy:deploy "${STAGE}" --yes --no-input
+          exit "${failed}"
+
+  cleanup:
+    name: Destroy Preview
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: namespace-profile-website
+    permissions:
+      contents: read
+    env:
+      ACCESS_EMAILS: ${{ secrets.ACCESS_EMAILS }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up
+        uses: ./.github/actions/setup
+
+      - name: Destroy
+        run: bun run alchemy:destroy "${STAGE}" --yes --no-input

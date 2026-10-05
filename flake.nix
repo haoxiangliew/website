@@ -30,9 +30,11 @@
         system:
         treefmt-nix.lib.evalModule (pkgsFor system) {
           programs = {
+            actionlint.enable = true;
             nixfmt.enable = true;
             shellcheck.enable = true;
             shfmt.enable = true;
+            zizmor.enable = true;
           };
         };
     in
