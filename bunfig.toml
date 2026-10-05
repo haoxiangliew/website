@@ -1,0 +1,9 @@
+telemetry = false
+
+[install]
+linker = "isolated"
+exact = true
+
+[run]
+bun = true
+elide-lines = 0
