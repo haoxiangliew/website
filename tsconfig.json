@@ -1,11 +1,18 @@
 {
+  "$schema": "./node_modules/@effect/tsgo/schema.json",
   "extends": "$app/tsconfig",
   "compilerOptions": {
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnostics": false
+      }
+    ]
   },
   "include": ["src", "vite.config.ts", "*.ts"]
 }

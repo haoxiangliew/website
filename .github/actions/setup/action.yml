@@ -1,0 +1,34 @@
+name: Setup
+description: Install Nix and bun dependencies, cached on the Namespace cache volume
+
+runs:
+  using: composite
+  steps:
+    - name: Mask access emails
+      if: env.ACCESS_EMAILS != ''
+      shell: bash
+      run: |
+        IFS=',' read -ra emails <<<"${ACCESS_EMAILS}"
+        for email in "${emails[@]}"; do
+          echo "::add-mask::$(xargs <<<"${email}")"
+        done
+
+    - name: Mount caches
+      uses: namespacelabs/nscloud-cache-action@v1
+      with:
+        cache: nix
+        path: ~/.bun/install/cache
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Load .envrc
+      shell: bash
+      run: | # zizmor: ignore[github-env]
+        nix profile install --inputs-from . nixpkgs#direnv
+        direnv allow
+        direnv export gha >>"${GITHUB_ENV}"
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile

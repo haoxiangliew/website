@@ -1,0 +1,79 @@
+name: Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+permissions: {}
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check
+    runs-on: namespace-profile-website
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up
+        uses: ./.github/actions/setup
+
+      - name: Format, lint and type check
+        run: nix fmt -- --ci
+
+  deploy:
+    name: Deploy Staging
+    needs: check
+    runs-on: namespace-profile-website
+    permissions:
+      contents: read
+    environment:
+      name: staging
+      url: https://staging.haoxiangliew.dev
+    env:
+      ACCESS_EMAILS: ${{ secrets.ACCESS_EMAILS }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up
+        uses: ./.github/actions/setup
+
+      - name: Deploy
+        run: bun run alchemy:deploy staging --yes --no-input
+
+  promotion-pr:
+    name: Promotion PR
+    needs: deploy
+    runs-on: namespace-profile-website
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up
+        uses: ./.github/actions/setup
+
+      - name: Open or update the staging to master PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/promotion-pr.sh
