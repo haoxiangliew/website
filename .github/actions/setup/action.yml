@@ -4,10 +4,6 @@ description: Install Nix and bun dependencies, cached on the Namespace cache vol
 runs:
   using: composite
   steps:
-    - name: Allow memory overcommit for oxlint JS plugins
-      shell: bash
-      run: sudo sysctl -w vm.overcommit_memory=1
-
     - name: Mask access emails
       if: env.ACCESS_EMAILS != ''
       shell: bash
